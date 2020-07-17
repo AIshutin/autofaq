@@ -1,6 +1,127 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<h1>...</h1>
 <script type="text/javascript">
   const a = tf.tensor([[1, 2], [3, 4]]);
   console.log('shape:', a.shape);
   a.print();
+
+  class BertTokenizer {
+    constructor(vocab, special_tokens_map, tokenizer_config) {
+        this.tokenizer_config = tokenizer_config;
+        this.special_tokens_map = special_tokens_map;
+        this.vocab = vocab;
+        this.whitespaces = new Set([" ", "\n", "\t"]);
+    }
+
+    isLemma(token) {
+      if (token.length < 3) {
+        return false;
+      }
+      return token[0] === '#' && token[1] === '#';
+    }
+
+    formatToken(token) {
+      if (this.isLemma(token)) {
+        return token.slice(2);
+      }
+      return token;
+    }
+
+    encode(text, add_special_tokens=true) {
+      if (this.tokenizer_config['do_lower_case']) {
+        text = text.toLowerCase();
+      }
+
+      var tokens_ids = [];
+      if (add_special_tokens) {
+        console.log(this.special_tokens_map)
+        console.log(this.special_tokens_map.cls_token in this.vocab);
+        tokens_ids = [this.vocab[this.special_tokens_map.cls_token]]
+      }
+      var start = 0;
+      var is_new_word = true;
+
+
+      while (start < text.length) {
+        sleep(2000);
+        var longest_key = "";
+        // check if it's whitespace;
+        if (this.whitespaces.has(text[start])) {
+          is_new_word = true;
+          start += 1;
+          continue;
+        }
+        // search longest applicable token
+        console.log('start: '+ start + " tokens_ids: " + tokens_ids)
+
+        for (var key in this.vocab) {
+          if (this.isLemma(key) && !is_new_word || !this.isLemma(key) && is_new_word) {
+            if (this.formatToken(key) != text.slice(start, start + this.formatToken(key).length)) {
+              continue;
+            }
+
+            if (this.formatToken(key).length > this.formatToken(longest_key).length) {
+              console.log('key ' + key + " key_id: " + this.vocab[key] +  ' prev ' + longest_key);
+              longest_key = key;
+            }
+          }
+        }
+
+        start += this.formatToken(longest_key).length;
+
+        if (longest_key === "") {
+          start += 1;
+          longest_key = this.special_tokens_map.unk_token;
+        }
+        console.log(longest_key);
+        tokens_ids.push(this.vocab[longest_key]);
+
+        console.log('START ' + start);
+      }
+      tokens_ids.push(this.vocab[this.special_tokens_map.sep_token]);
+      console.log(tokens_ids);
+      return tokens_ids;
+    }
+  }
+
+  function get_vocab(url) {
+    var text = "";
+    $.ajax({
+      'url': url,
+      'async': false,
+      'success': function (text1) {
+        text = text1;
+        return text1;
+        },
+    })
+    let arr = text.split('\n');
+    console.log(arr);
+    let vocab = {};
+    let ind = 0;
+    for (var i = 0; i < arr.length; i++) { // arr.length;
+      vocab[arr[i]] = i;
+    }
+    return vocab;
+  }
+
+  var defaultSpecialTokensMap = {"unk_token": "[UNK]", "sep_token": "[SEP]",
+                                "pad_token": "[PAD]", "cls_token": "[CLS]",
+                                "mask_token": "[MASK]"};
+  var defaultTokenizerConfig = {"do_lower_case": true, "model_max_length": 512};
+
+  function find_vocab() {
+    return get_vocab("./distilbert/vocab.txt");
+  }
+
+  function sleep(milliseconds) {
+    const date = Date.now();
+    let currentDate = null;
+    do {
+      currentDate = Date.now();
+    } while (currentDate - date < milliseconds);
+  }
+
+  let vocab = find_vocab();
+  var tokenizer = new BertTokenizer(vocab, defaultSpecialTokensMap, defaultTokenizerConfig);
 </script>
