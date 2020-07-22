@@ -54,7 +54,7 @@ if __name__ == "__main__":
     from torch.utils.data import Dataset, DataLoader
     torch.manual_seed(0)
 
-    model, tokenizer = load_model('distilbert')
+    model, tokenizer = load_model('tf')
 
     corpus = embedlib.datasets.CorpusData(['en-twitt-corpus'], int(1e4))
     print("Corpus size: " + str(len(corpus)))

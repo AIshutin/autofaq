@@ -1,0 +1,6 @@
+tensorflow>=2.2.0
+onnx
+onnx-tf>=1.6.0
+transformers
+torch
+sacred
